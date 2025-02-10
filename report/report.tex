@@ -1,0 +1,933 @@
+﻿\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage[hidelinks]{hyperref}
+\usepackage{graphicx}
+\usepackage{titling}
+\usepackage{float}
+\usepackage{longtable}
+\usepackage[text={18cm,21cm},centering]{geometry}
+\usepackage{hyperref} \hypersetup{ colorlinks=true, linkcolor=blue, filecolor=magenta,
+urlcolor=blue, }
+
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{enumitem}
+\usepackage{geometry}
+\geometry{a4paper, margin=2.5cm}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{natbib}
+\bibliographystyle{plainnat}
+\usepackage[utf8]{inputenc} 
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{geometry}
+\geometry{a4paper, margin=2.5cm}
+\usepackage{hyperref}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Teorema}
+\newtheorem{lemma}{Lema}
+\newtheorem{corollary}{Corolario}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definición}
+\newtheorem{remark}{Observación}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    {\bfseries\LARGE Universidad de La Habana \par}
+    \vspace{1cm}
+    {\scshape\Large Facultad de Matemática y Computación \par}
+    \vspace{3cm}
+    {\scshape\Huge Proyecto de Diseño de Análisis y Algoritmos\par}
+    \vspace{1cm}
+    {\scshape\Large Análisis y resolución de ejercicios de la plataforma Codeforces\par}
+    \vfill
+
+    {\Large Rafael Acosta Márquez C-411 \par}
+    {\Large Eisler Francisco Valles Rodríguez C-411}
+    \vfill
+    {\href{Poner enlace de github}{Proyecto en github} \par}
+\end{titlepage}
+
+\tableofcontents
+
+\newpage
+
+\section{AlmostSorted}
+
+\subsection{Ejercicio}
+
+\href{https://codeforces.com/problemset/problem/1730/F}{Link del problema en la plataforma \textbf{Codeforces}}
+
+\begin{itemize}
+    \item límite de tiempo por test: 2 segundos
+    \item límite de memoria por test: 256 megabytes
+\end{itemize}
+Dada una permutación $p$ de longitud $n$ y un entero positivo $k$, el problema consiste en construir otra permutación $q$ de los mismos elementos que minimice el número de inversiones bajo la restricción:
+\begin{equation}
+    \forall\, 1 \leq i < j \leq n, \quad p_i \leq p_j + k.
+\end{equation}
+
+\textbf{Entrada}\\
+
+La primera línea contiene 2 enteros $n$, $k$ $1 \leq n \leq 5000; 1 \leq k \leq 8$.
+
+Luego siguen $n$ enteros entre 1 y n que representan la permutación p.
+
+
+\textbf{Salida}\\
+
+La salida debe ser un único entero $x$ que representa el menor número posible de inversiones para todos los posibles arreglos $q$ que cumplen las restricciones planteadas en el problema.
+
+
+\subsection{Etiquetas}
+
+\begin{itemize}
+    \item DP
+    \item Cubrimiento Mínimo
+\end{itemize}
+
+\subsection{Solución}
+El algoritmo resuelve el problema mediante una combinación de programación dinámica (DP) y un Árbol de Fenwick (BIT). Se define un estado de la DP por una pareja \texttt{(block\_start, mask)}, donde \texttt{block\_start} indica el siguiente elemento (en orden creciente) que debe ser colocado en la permutación $q$, y \texttt{mask} es una máscara de bits de longitud $k+1$ que registra qué candidatos dentro de la ventana actual ya han sido seleccionados. Cada transición consiste en escoger un candidato disponible, actualizar el BIT para contabilizar las inversiones que se generan al colocar dicho elemento y reconfigurar la ventana mediante un desplazamiento, lo que permite explorar todas las soluciones válidas sin incurrir en la complejidad del enfoque por fuerza bruta.
+
+\textbf{Definiciones:}
+\begin{itemize}
+    \item \textbf{Permutación:} Un arreglo de $n$ elementos donde cada entero de $1$ a $n$ aparece exactamente una vez.
+    \item \textbf{Inversión:} Un par $(i,j)$, $1 \le i < j \le n$, tal que $q_i > q_j$ en la permutación $q$.
+    \item \textbf{Restricción del problema:} Para todo par $i<j$, se cumple que $p_i \le p_j + k$, lo que impone un límite en el retraso relativo de los elementos en $q$ respecto a su orden natural.
+    \item \textbf{DP State (\texttt{block\_start, mask}):} Representa el proceso de asignación de elementos, donde \texttt{mask} indica qué elementos dentro del bloque actual de $k+1$ candidatos ya han sido utilizados.
+    \item \textbf{BIT (Fenwick Tree):} Estructura de datos que permite actualizar y consultar la cantidad de inversiones de forma eficiente en tiempo $O(\log n)$.
+\end{itemize}
+
+\subsubsection{Fuerza bruta}
+Una solución de fuerza bruta implicaría enumerar todas las permutaciones posibles de $q$, verificar la restricción $p_i \le p_j + k$ en cada caso y calcular el número de inversiones de cada permutación. Dado que existen $n!$ permutaciones, este enfoque tiene una complejidad factorial, lo cual es inviable para $n$ tan grandes como $5000$. 
+
+\subsection{DP- Solution}
+La solución mediante programación dinámica explota el hecho de que, debido a la restricción impuesta por $k$, cada elemento en $q$ puede provenir únicamente de una ventana de candidatos de tamaño acotado ($k+1$ elementos). Se definen los estados de la DP como \texttt{(block\_start, mask)}, y para cada estado se exploran las transiciones posibles mediante la selección de un candidato no utilizado en la ventana actual. La función \texttt{dp} acumula el costo (en número de inversiones) sumando las inversiones locales, determinadas eficientemente mediante el BIT, y el costo futuro obtenido de los estados recursivos. La memoización evita el recálculo de estados ya evaluados, garantizando que la complejidad total sea $O(n \cdot 2^{(k+1)} \cdot k \cdot \log n)$, lo que resulta factible para los valores dados de $n$ y $k$. Notar que se puede hacer el cálculo de las inversiones sin usar un Fenwick Tree, pero esto aumentaría la complejidad de la solución propuesta en un factor de N.
+
+
+\subsection{Demostración por Inducción}
+
+\subsubsection{Paso Inductivo}
+
+Supongamos que, para todo estado con 
+\[
+\texttt{block\_start}' > \texttt{block\_start},
+\]
+la función 
+\[
+\texttt{dp(block\_start}', \texttt{mask}')
+\]
+calcula correctamente el mínimo número de inversiones acumulables a partir de dicho estado. Entonces, en el estado 
+\[
+\texttt{dp(block\_start, mask)},
+\]
+al iterar sobre todas las posibles elecciones válidas de \texttt{idx} (es decir, todos los candidatos en la ventana de tamaño $k+1$ que aún no han sido usados), se evalúan:
+
+\begin{itemize}
+    \item El \textbf{costo local} (número de inversiones producidas por la inserción del elemento elegido), obtenido mediante la consulta al BIT.
+    \item El \textbf{costo futuro} (el mínimo costo de inversiones a partir del estado actualizado), garantizado por la hipótesis inductiva.
+\end{itemize}
+
+Se toma el mínimo sobre todas estas alternativas. Por lo tanto, la función 
+\[
+\texttt{dp(block\_start, mask)}
+\]
+retorna el mínimo número de inversiones que se pueden obtener completando la construcción de $q$ a partir de dicho estado.
+
+
+\subsection{Pertenecia a la clase NP}
+Considérese la versión de decisión del problema: dada una permutación $p$, dos enteros positivos $n$ y $k$, y un umbral $T$, ¿existe una permutación $q$ de $[1, n]$ que satisfaga la restricción
+\[
+\forall\, 1 \leq i < j \leq n,\quad p_i \leq p_j + k,
+\]
+y que tenga a lo sumo $T$ inversiones? Un certificado para esta decisión es la propia permutación $q$. Verificar que $q$ es una permutación (es decir, que contiene cada entero de $1$ a $n$ exactamente una vez) se realiza en tiempo $O(n)$. Además, se puede comprobar en tiempo polinomial que la restricción se cumple (por ejemplo, en tiempo $O(n^2)$) y calcular el número de inversiones en tiempo $O(n \log n)$ utilizando una estructura tipo Árbol de Fenwick o simplemente en tiempo $O(n^2)$ mediante fuerza bruta. Por lo tanto, la versión de decisión del problema pertenece a NP.
+
+\subsection{Pertenencia a la clase NP-Hard}
+Para demostrar que el problema es NP-Hard, se realiza una reducción desde el problema de \emph{Minimum Feedback Arc Set in Tournaments} (MFAS), conocido por ser NP-Hard.\cite{Charbit2006TheMF}
+
+\medskip
+
+\textbf{Instancia de MFAS:} Dado un torneo $T=(V,A)$ con $|V|=n$, el problema MFAS consiste en encontrar un ordenamiento (permutación) $q$ de los vértices que minimice el número de arcos invertidos, es decir, aquellos arcos $(u,v)$ tales que, en el orden $q$, $u$ aparece después de $v$.
+
+\medskip
+
+\textbf{Construcción de la instancia:}
+\begin{enumerate}
+    \item Sea $p^*$ una extensión lineal (un ordenamiento Hamiltoniano) de $T$. Es bien sabido que, en todo torneo, existe un camino Hamiltoniano, y dicho ordenamiento puede obtenerse en tiempo polinomial.
+    \item Se define la permutación de entrada $p$ como $p=p^*$.
+    \item Se fija $k=n-1$. Con esta elección, la restricción
+    \[
+    p_i \le p_j + k
+    \]
+    se satisface trivialmente para toda permutación $q$, ya que para cualquier $i$ se tiene $p_i \le n$ y $p_j + (n-1) \ge n$.
+\end{enumerate}
+
+\medskip
+
+\textbf{Relación entre la inversión y el feedback:} 
+
+Para cualquier permutación $q$ de los vértices, definimos el número de inversiones relativo a $p$ como
+\[
+\text{inv}(q) = \#\{(i,j) \mid 1\le i<j\le n \text{ y } p^{-1}(q(i)) > p^{-1}(q(j))\}.
+\]
+Dado que $p=p^*$ es una extensión lineal de $T$, para cada par de vértices $(u,v)$ se cumple:
+\begin{itemize}
+    \item Si $T$ contiene el arco $(u,v)$ (es decir, $u$ es preferido a $v$), entonces en $p$ se tiene $p(u) < p(v)$.
+    \item Por lo tanto, si en el ordenamiento $q$ se invierte la relación (es decir, $v$ aparece antes que $u$), se incurre en una inversión que refleja el incumplimiento de la preferencia impuesta por $T$.
+\end{itemize}
+Más formalmente, se puede demostrar que
+\[
+\text{inv}(q) = \text{FAS}(q) + C,
+\]
+donde $\text{FAS}(q)$ es el número de arcos invertidos (o feedback arcs) en $T$ respecto al ordenamiento $q$, y $C$ es una constante dependiente únicamente de la instancia fija (determinada por $p^*$ y $T$). En consecuencia, minimizar $\text{inv}(q)$ es equivalente a minimizar $\text{FAS}(q)$.
+
+\medskip
+
+\textbf{Conclusión de la Reducción:}
+
+Dado que MFAS es NP-Hard en torneos, y dado que la reducción descrita transforma cualquier instancia de MFAS en una instancia de nuestro problema (donde la restricción es trivial al fijar $k=n-1$), se concluye que el problema de encontrar una permutación $q$ que minimice el número de inversiones relativo a $p$ es NP-Hard cuando $n$ y $k$ son variables de la entrada.
+
+\medskip
+
+\textbf{Nota:} Aunque en esta reducción se elige $k=n-1$ para hacer trivial la restricción, dado que $k$ es parte de la entrada, la NP-Hardness se extiende a la versión general del problema en la que $k$ puede tomar cualquier valor.
+
+
+\section{Complete the Projects (hard version)}
+
+\subsection{Ejercicio}
+
+\href{https://codeforces.com/contest/1203/problem/F2}{Link del problema en la plataforma \textbf{Codeforces}}
+
+\begin{itemize}
+    \item límite de tiempo por test: 2 segundos
+    \item límite de memoria por test: 256 megabytes
+\end{itemize}
+
+Piad es un científico de la computación muy famoso. Su calificación actual es de $r$ unidades.
+
+Algunos clientes muy ricos le pidieron que completara algunos proyectos para sus empresas. Para realizar el $i$ proyecto, Piad necesita tener al menos $ai$ unidades de calificación; después de completar este proyecto, su calificación cambiará en $bi$ (su calificación aumentará o disminuirá en $bi$) ($bi$ puede ser positivo o negativo). La calificación de Piad no debe caer por debajo de cero porque entonces la gente no confiará en un científico de la computación tan poco valorado.
+
+Su tarea consiste en calcular el tamaño máximo posible de dicho subconjunto de proyectos.
+
+\begin{itemize}
+    \item 1 — Piad puede elegir el orden en el que completa los proyectos. Además, puede incluso saltarse algunos proyectos.
+    \item 2 — Para ganar más experiencia (y dinero, por supuesto) Piad quiere elegir el subconjunto de proyectos que tengan el máximo tamaño posible y el orden en el que los completará, de forma que tenga suficiente calificación antes de empezar cada proyecto, y tenga una calificació no negativa después de completar cada proyecto.
+\end{itemize}
+
+\textbf{Entrada}\\
+
+La primera línea contiene dos enteros $n$ y $r$ $(1 \leq n \leq 100,1 \leq r \leq 30000)$.
+
+Las siguientes $n$ líneas contienen proyectos, uno por línea. El $i$-ésimo proyecto es representado como un par de enteros $a_i$ y $b_i$ $(1 \leq a_i \leq 30000,-300 \leq b_i \leq 300)$ - la valoración requerida para completar el $i$-ésimo proyecto y el cambio de calificación tras la finalización del proyecto
+\\
+
+\textbf{Salida}\\
+
+Imprime un número entero: el tamaño del subconjunto máximo posible (posiblemente, vacío) de proyectos que Piad puede elegir.
+
+\subsection{Etiquetas}
+
+\begin{itemize}
+    \item DP
+    \item Greedy
+\end{itemize}
+
+\subsection{Solución}
+
+Para abordar el problema se observa que los proyectos se pueden clasificar en dos tipos:
+\begin{itemize}
+    \item \textbf{Proyectos positivos} (\(b_i \ge 0\)): Se pueden realizar en cuanto estén disponibles, ya que aumentan o mantienen la calificación.
+    \item \textbf{Proyectos negativos} (\(b_i < 0\)): Se deben realizar de forma cuidadosa, ya que reducen la calificación.
+\end{itemize}
+
+Se presentan dos enfoques: uno basado en \textbf{programación dinámica (DP)} y otro en un algoritmo \textbf{greedy (voraz)}.
+\\
+
+
+\textbf{Definiciones y Formulación del Problema DP}
+
+Sea \(\mathcal{P} = \{ (a_i,b_i) \mid b_i < 0\}\) el conjunto de proyectos negativos. Se ordena \(\mathcal{P}\) de forma que, para dos proyectos \(p=(a_p,b_p)\) y \(q=(a_q,b_q)\), si \(p\) aparece antes que \(q\) se cumple
+\[
+a_p+b_p \ge a_q+b_q.
+\]
+Esta ordenación “prioriza” aquellos proyectos que, pese a su efecto negativo, dejan una mayor calificación residual tras su realización.
+
+Definimos el arreglo \(\{dp[j]\}_{j=0}^{m}\) (con \(m = |\mathcal{P}|\)) de la siguiente forma:
+\[
+dp[j] = \text{máxima calificación alcanzable tras ejecutar exactamente } j \text{ proyectos negativos en el orden establecido,}
+\]
+con la restricción de que la calificación se mantenga no negativa en todo momento. Se inicializa:
+\[
+dp[0] = r,
+\]
+donde \(r\) es la calificación tras procesar los proyectos positivos, y para \(j \ge 1\) se define inicialmente
+\[
+dp[j] = -\infty.
+\]
+La transición se formula de la siguiente manera: Para cada proyecto negativo \((a,b)\) (con \(b<0\)) y para \(i = m-1, m-2, \dots, 0\), si se tiene
+\[
+dp[i] \ge a \quad \text{y} \quad dp[i] + b \ge 0,
+\]
+entonces se actualiza
+\[
+dp[i+1] = \max\{ dp[i+1],\, dp[i]+b\}.
+\]
+
+\subsubsection{Programación Dinámica}
+
+\textbf{Procesamiento de Proyectos Positivos}
+
+\begin{enumerate}
+    \item Se ordenan los proyectos positivos por \(a_i\) en orden ascendente.
+    \item Se ejecutan secuencialmente comprobando que la calificación actual \(r\) sea al menos \(a_i\). Si se cumple la condición, se realiza el proyecto y se actualiza la calificación:
+    \[
+    r \leftarrow r + b_i.
+    \]
+    \item Se cuenta el número de proyectos positivos completados, denotado por \texttt{countPositive}.
+    \\
+\end{enumerate}
+
+\textbf{Procesamiento de Proyectos Negativos mediante DP}
+\\
+
+    Sea \(\mathcal{P} = \{ (a_i,b_i) \mid b_i < 0\}\) el conjunto de proyectos negativos. Se ordena \(\mathcal{P}\) de forma que, para dos proyectos \(p=(a_p,b_p)\) y \(q=(a_q,b_q)\), si \(p\) aparece antes que \(q\) se cumple
+\[
+a_p+b_p \ge a_q+b_q.
+\]
+Esta ordenación “prioriza” aquellos proyectos que, pese a su efecto negativo, dejan una mayor calificación residual tras su realización.
+
+Definimos el arreglo \(\{dp[j]\}_{j=0}^{m}\) (con \(m = |\mathcal{P}|\)) de la siguiente forma:
+\[
+dp[j] = \text{máxima calificación alcanzable tras ejecutar exactamente } j \text{ proyectos negativos en el orden establecido,}
+\]
+con la restricción de que la calificación se mantenga no negativa en todo momento. Se inicializa:
+\[
+dp[0] = r,
+\]
+donde \(r\) es la calificación tras procesar los proyectos positivos, y para \(j \ge 1\) se define inicialmente
+\[
+dp[j] = -\infty.
+\]
+La transición se formula de la siguiente manera: Para cada proyecto negativo \((a,b)\) (con \(b<0\)) y para \(i = m-1, m-2, \dots, 0\), si se tiene
+\[
+dp[i] \ge a \quad \text{y} \quad dp[i] + b \ge 0,
+\]
+entonces se actualiza
+\[
+dp[i+1] = \max\{ dp[i+1],\, dp[i]+b\}.
+\]
+Se define:
+\[
+\texttt{bestNegative} = \max\{\, j \mid dp[j] \ge 0\,\}.
+\]
+
+La solución final es la suma de los proyectos positivos y negativos completados:
+\[
+\texttt{countPositive} + \texttt{bestNegative}.
+\]
+\\
+
+\textbf{Demostración de Correctitud}
+\\
+
+La demostración se divide en dos partes: (1) se prueba que es posible, sin pérdida de generalidad, considerar únicamente órdenes en las que los proyectos negativos aparecen en forma no creciente según \(a_i+b_i\); y (2) se demuestra, por inducción, que la recurrencia DP definida produce la máxima calificación alcanzable tras ejecutar \(j\) proyectos.
+\\
+
+\textbf{Paso 1: Validez de la Ordenación por \(a_i+b_i\)}
+
+\begin{lemma}
+Sean \(p=(a_p,b_p)\) y \(q=(a_q,b_q)\) dos proyectos negativos tales que
+\[
+a_p+b_p < a_q+b_q.
+\]
+Si en una secuencia factible \(S\) se ejecuta \(p\) antes que \(q\), entonces existe una secuencia factible \(S'\) en la que se intercambian \(p\) y \(q\) (es decir, primero se ejecuta \(q\) y luego \(p\)).
+\end{lemma}
+
+\begin{proof}
+Sea \(R\) la calificación inmediatamente antes de ejecutar \(p\) en la secuencia \(S\). Dado que \(S\) es factible se tiene:
+\begin{align}
+R &\ge a_p, \quad \text{(para poder ejecutar }p\text{)} \label{eq:cond1}\\[1mm]
+R+b_p &\ge a_q, \quad \text{(para ejecutar }q\text{ tras }p\text{)} \label{eq:cond2}\\[1mm]
+R+b_p+b_q &\ge 0. \quad \text{(calificación final no negativa)} \label{eq:cond3}
+\end{align}
+Ahora, consideremos la secuencia \(S'\) en la que se ejecuta primero \(q\) y luego \(p\). Sea también \(R\) la calificación inicial para \(q\) en \(S'\). Para que \(S'\) sea factible se deben cumplir:
+\begin{align}
+R &\ge a_q, \label{eq:cond4}\\[1mm]
+R+b_q &\ge a_p, \label{eq:cond5}\\[1mm]
+R+b_q+b_p &\ge 0. \label{eq:cond6}
+\end{align}
+Observemos lo siguiente:
+\begin{itemize}
+    \item \textbf{Condición \eqref{eq:cond4}:} De \eqref{eq:cond2} se tiene \(R \ge a_q - b_p\). Dado que \(b_p<0\), se tiene \(-b_p>0\) y, por tanto, \(a_q - b_p > a_q\). Así, \(R \ge a_q - b_p\) implica en particular que \(R \ge a_q\).
+    \item \textbf{Condición \eqref{eq:cond5}:} Queremos demostrar que \(R+b_q \ge a_p\). Notemos que la hipótesis del lema, \(a_p+b_p < a_q+b_q\), se reescribe como:
+    \[
+    a_q+b_q > a_p+b_p \quad \Longrightarrow \quad a_q+b_q-b_p > a_p.
+    \]
+    Dado que, en \(S\), se cumple \eqref{eq:cond2}: \(R+b_p \ge a_q\), sumando \(b_q-b_p\) a ambos lados se obtiene
+    \[
+    R+b_q \ge a_q+b_q-b_p > a_p.
+    \]
+    \item \textbf{Condición \eqref{eq:cond6}:} Es idéntica a la \eqref{eq:cond3} (recordando que la suma \(b_p+b_q\) es conmutativa).
+\end{itemize}
+Por lo tanto, la secuencia \(S'\) es factible. Repetidamente, mediante intercambios locales, cualquier secuencia factible puede transformarse en una en la que los proyectos negativos se ejecuten en orden no creciente según \(a_i+b_i\).
+\\
+\end{proof}
+
+\textbf{Paso 2: Correctitud de la Recurrencia DP}
+
+Procederemos por inducción sobre el número \(j\) de proyectos negativos ejecutados.
+
+\paragraph{Caso base:} Para \(j=0\) no se ha ejecutado ningún proyecto negativo, de modo que la calificación final es
+\[
+dp[0] = r,
+\]
+lo cual es óptimo.
+
+\paragraph{Paso inductivo:} Sea \(j \ge 0\) y supongamos que \(dp[j]\) es la máxima calificación alcanzable tras ejecutar \(j\) proyectos negativos en el orden no creciente de \(a_i+b_i\). Sea \(p=(a,b)\) el siguiente proyecto (el de posición \(j+1\) en el orden) y consideremos la posibilidad de ejecutar \(p\) inmediatamente después de haber alcanzado la calificación \(dp[j]\).  
+Para que \(p\) sea ejecutable es necesario que:
+\[
+dp[j] \ge a \quad \text{y} \quad dp[j] + b \ge 0.
+\]
+En ese caso, se puede actualizar:
+\[
+dp[j+1] = \max\{ dp[j+1],\, dp[j]+b \}.
+\]
+Por hipótesis, cualquier secuencia factible de \(j+1\) proyectos no puede dejar una calificación mayor que \(dp[j]+b\); de allí se deduce que \(dp[j+1]\) es óptimo.
+
+\begin{corollary}
+El número máximo de proyectos negativos que se pueden ejecutar de forma factible es
+\[
+k = \max\{\,j \mid dp[j] \ge 0\,\}.
+\]
+\end{corollary}
+
+\textbf{Análisis de Complejidad}
+\\
+
+\textbf{Procesamiento de Proyectos Positivos}
+
+\begin{itemize}
+    \item \textbf{Ordenamiento:}  
+    Los proyectos positivos se ordenan en orden creciente según \(a_i\). Dado que existen \(n\) proyectos positivos, esta operación requiere \(\mathcal{O}(n\log n)\).
+    
+    \item \textbf{Ejecución:}  
+    Se recorre la lista de proyectos positivos y, para cada proyecto, se verifica la condición \(r \ge a_i\) y se actualiza la calificación \(r\) (más una operación de incremento). Esto se realiza en \(\mathcal{O}(n)\).
+\end{itemize}
+
+Por lo tanto, la complejidad total para la fase de proyectos positivos es:
+\[
+\mathcal{O}(n\log n).
+\]
+
+\textbf{Procesamiento de Proyectos}
+
+Sea \(m\) el número de proyectos negativos. La fase DP consta de los siguientes pasos:
+
+\begin{enumerate}
+    \item \textbf{Ordenamiento:}  
+    Los proyectos negativos se ordenan en orden decreciente según \(a_i+b_i\). Esta operación requiere \(\mathcal{O}(m\log m)\).
+    
+    \item \textbf{Inicialización del Arreglo DP:}  
+    Se define un arreglo \(dp[0 \ldots m]\) donde:
+    \[
+    dp[0] = r \quad \text{y} \quad dp[j] = -\infty \quad \text{para } j \ge 1.
+    \]
+    Esta inicialización requiere \(\mathcal{O}(m)\).
+    
+    \item \textbf{Actualización mediante Doble Bucle:}  
+    Para cada proyecto negativo \((a,b)\) (total de \(m\) proyectos), se recorre el arreglo \(dp\) desde \(i = m-1\) hasta \(0\). En cada iteración se verifica si:
+    \[
+    dp[i] \ge a \quad \text{y} \quad dp[i] + b \ge 0,
+    \]
+    y en caso afirmativo se actualiza:
+    \[
+    dp[i+1] = \max\{dp[i+1],\, dp[i]+b\}.
+    \]
+    Dado que, en el peor caso, el bucle interno itera \(m\) veces para cada uno de los \(m\) proyectos negativos, esta parte requiere:
+    \[
+    \mathcal{O}(m^2).
+    \]
+\end{enumerate}
+
+\textbf{Complejidad Global}
+
+Sumando las complejidades de ambas fases, se tiene:
+\[
+\mathcal{O}(n\log n + m\log m + m + m^2).
+\]
+Observando que el término dominante es \(\mathcal{O}(m^2)\) y que, en el peor caso, \(m\) puede ser del mismo orden que \(n\) (ya que \(n = n + m\) y \(n \leq 100\) según las restricciones del problema), se concluye que la complejidad global del algoritmo de programación dinámica es:
+\[
+\boxed{\mathcal{O}(n^2) \quad \text{en el peor de los casos.}}
+\]
+
+\subsubsection{Greedy}
+
+\textbf{Procesamiento de Proyectos Positivos}
+\\
+
+\textbf{Procedimiento del Algoritmo}
+La función \texttt{MaxPos} realiza los siguientes pasos:
+\begin{enumerate}[label=\alph*)]
+    \item Se toma el conjunto
+    \[
+    P = \{ (a_i, b_i) : b_i \ge 0 \},
+    \]
+    y se ordena de forma creciente según $a_i$ (el rating mínimo requerido).
+    
+    \item Se recorre la lista en ese orden. Para cada proyecto $(a_i, b_i)$ se verifica que el rating actual $r$ cumpla $r \ge a_i$. En ese caso, se "realiza" el proyecto, aumentando $r$ en $b_i$ y se incrementa el contador global de proyectos realizados.
+\end{enumerate}
+
+\textbf{Demostración de Optimalidad}
+\textbf{Afirmación:} Si existe un orden de realización de los proyectos de $P$ que permite completarlos sin violar las condiciones (tener rating suficiente al iniciar y no caer por debajo de 0 tras su ejecución), entonces el procedimiento \emph{greedy} ---que toma los proyectos en orden creciente de $a_i$--- completa al menos la misma cantidad de proyectos.
+
+\medskip
+\noindent \textbf{Argumento (por intercambio e inducción):}
+\begin{itemize}
+    \item \emph{Caso base:} Si $P$ es vacío o contiene un único proyecto, el algoritmo es trivialmente óptimo.
+    \item \emph{Paso inductivo:} Sea $\pi$ una secuencia óptima de proyectos de $P$ y supongamos que en $\pi$ aparece un proyecto $P_t = (a_t, b_t)$ realizado en una posición posterior respecto a otro proyecto $P_s = (a_s, b_s)$ con $a_s < a_t$. Dado que $b_s \ge 0$, realizar $P_s$ antes de $P_t$ incrementa (o al menos no disminuye) el rating, lo que facilita la realización de $P_t$. Por un argumento de intercambio se concluye que cualquier secuencia óptima puede reordenarse de forma creciente respecto a $a_i$ sin perder factibilidad ni reducir el número de proyectos completados.
+\end{itemize}
+De esta forma, el algoritmo que recorre $P$ en orden creciente de $a_i$ es óptimo para la parte de los proyectos positivos.
+\\
+
+\textbf{Procesamiento de Proyectos Negativos}
+\\
+
+\textbf{Planteamiento del Subproblema}
+Sea $R$ el rating resultante tras completar todos los proyectos positivos (es decir, el valor final de $r$ después de ejecutar \texttt{MaxPos}). Los proyectos negativos son aquellos para los cuales $b_i < 0$. Para cada proyecto, se deben satisfacer dos condiciones:
+\begin{enumerate}[label=\arabic*.]
+    \item \textbf{Requisito previo:} Al iniciar el proyecto se debe tener rating al menos $a_i$. Sea $d$ la caída acumulada (tal que el rating actual es $R-d$); entonces se requiere:
+    \[
+    R-d \ge a_i \quad \Longleftrightarrow \quad d \le R-a_i.
+    \]
+    \item \textbf{No caer en negativo:} Tras ejecutar el proyecto y sumar $b_i$ (con $b_i < 0$), se debe tener:
+    \[
+    R-d+b_i \ge 0 \quad \Longleftrightarrow \quad d \le R+b_i.
+    \]
+\end{enumerate}
+Dado que $b_i < 0$, la inecuación $d \le R+b_i$ es más restrictiva que $d \le R$. En resumen, para que el proyecto $i$ sea realizable cuando la caída acumulada es $d$, es necesario que
+\[
+d \le \min\{R-a_i,\, R+b_i\}.
+\]
+Observamos que, en una secuencia de proyectos negativos, $d$ es la suma de los \emph{costos} de cada proyecto, donde se define el costo como
+\[
+c_i = -b_i > 0.
+\]
+
+\textbf{Transformación en el Algoritmo}
+En el código se transforma cada proyecto negativo, originalmente representado por el par $(a_i, b_i)$, modificando su primer componente de la siguiente forma:
+\begin{enumerate}[label=\alph*)]
+    \item Se calcula
+    \[
+    p.X \leftarrow R - a_i.
+    \]
+    \item Se actualiza restando $b_i$ (recordando que $b_i < 0$, esta resta equivale a sumar $c_i = -b_i$):
+    \[
+    p.X \leftarrow (R - a_i) - b_i = R - a_i - b_i.
+    \]
+    \item Finalmente, se fija:
+    \[
+    p.X \leftarrow \min\{p.X,\, R\}.
+    \]
+\end{enumerate}
+Definimos, para cada proyecto negativo, el valor
+\[
+K_i = \min\{R,\, R-a_i-b_i\}.
+\]
+Analicemos los casos:
+\begin{itemize}
+    \item Si $a_i > -b_i$ (es decir, $a_i > c_i$), entonces $R-a_i < R+b_i$ y la restricción de factibilidad es $d\le R-a_i$. En este caso, $K_i = R-a_i-b_i = (R-a_i)+c_i$.
+    \item Si $a_i \le -b_i$, se tiene $R+b_i \le R-a_i$ y la restricción es $d\le R+b_i$. Además, como $R-a_i-b_i \ge R$, se fija $K_i = R$.
+\end{itemize}
+Así, la transformación asocia a cada proyecto negativo un par $(K_i, c_i)$, donde $c_i = -b_i$ y $K_i \in [0, R]$. Aunque $K_i$ no es idéntico a la restricción original $D_i = \min\{R-a_i,\, R+b_i\}$, la forma en que se utiliza en el algoritmo permite agrupar los proyectos según un parámetro que facilita la asignación del "presupuesto" de rating (o, en la analogía, del tiempo disponible).
+\\
+
+\textbf{El Algoritmo de \texttt{Schedule}}
+La función \texttt{Schedule} procede de la siguiente forma:
+\begin{enumerate}[label=\arabic*.]
+    \item Se ordenan los proyectos negativos (ya transformados) en orden creciente según $K_i$.
+    \item Se recorre la lista en orden inverso (de mayor a menor $K_i$). Para cada proyecto $i$ se define:
+    \begin{itemize}
+        \item $\mathtt{current} = \max\{0,\,K_i\}$.
+        \item Si existe un proyecto previo (en la lista ordenada), se define:
+        \[
+        \mathtt{previous} = \max\{0,\,K_{i-1}\},
+        \]
+        y se toma la diferencia:
+        \[
+        \Delta = \mathtt{current} - \mathtt{previous}.
+        \]
+        (Si $i$ es el primero, se define $\mathtt{previous} = 0$.)
+    \end{itemize}
+    \item En cada iteración se inserta en un multiconjunto el costo $c_i = -b_i$ del proyecto actual. Luego, mientras exista presupuesto $\Delta > 0$ y el multiconjunto no esté vacío, se extrae del multiconjunto el costo mínimo $x$ y se procede de la siguiente forma:
+    \begin{itemize}
+        \item Si $\Delta \ge x$, se ``programa'' (realiza) ese proyecto, se incrementa el contador global y se reduce $\Delta$ en $x$.
+        \item Si $\Delta < x$, se paga parcialmente $x$ (reduciéndolo en $\Delta$), se reinserta el costo remanente en el multiconjunto y se agota $\Delta$.
+    \end{itemize}
+\end{enumerate}
+
+\noindent \textbf{Interpretación:} El algoritmo divide el intervalo $[0,R]$ en subintervalos determinados por los valores consecutivos de $K_i$ y, en cada ventana de tamaño $\Delta$, asigna parte del presupuesto disponible para ``pagar'' el costo de los proyectos. Este procedimiento es análogo a los algoritmos \emph{greedy} clásicos para maximizar el número de tareas que pueden programarse bajo restricciones de tiempos de procesamiento y deadlines, utilizando una cola de prioridad (en este caso, el \texttt{MultiSet}).
+\\
+
+\textbf{Demostración de Optimalidad (por Intercambio y Reducción a Scheduling)}
+La idea central es la siguiente: Sea $d$ la caída acumulada (o carga) que se va sumando al realizar proyectos negativos. Para cada proyecto negativo $i$ con parámetros $(a_i, b_i)$ (y costo $c_i = -b_i$), la factibilidad exige que, al iniciar el proyecto,
+\[
+d \le \min\{R-a_i,\, R+b_i\}.
+\]
+Definimos:
+\[
+D_i = \min\{R-a_i,\, R+b_i\}.
+\]
+Una solución factible es una secuencia de proyectos negativos tal que, si $d$ es la suma acumulada de los $c_i$ en el orden de realización, se cumple que para cada proyecto realizado:
+\[
+d \le D_i.
+\]
+
+Este problema se reduce a una versión del clásico problema de \emph{scheduling} de tareas (con tiempos de procesamiento $c_i$) sujetas a deadlines $D_i$. Se sabe, por teoremas clásicos sobre algoritmos \emph{greedy} para scheduling, que el siguiente procedimiento es óptimo:
+\begin{enumerate}[label=\alph*)]
+    \item Ordenar las tareas (en este caso, los proyectos negativos) según sus deadlines o parámetros relacionados.
+    \item Insertar las tareas en una cola de prioridad y, conforme se va ``avanzando'' en el tiempo (o en la acumulación del costo $d$), elegir siempre la tarea de menor costo para aprovechar al máximo el presupuesto disponible.
+\end{enumerate}
+El algoritmo presentado transforma cada proyecto en un par $(K_i, c_i)$ y asigna el presupuesto disponible en ventanas determinadas por los valores consecutivos de $K_i$. Un argumento por intercambio (similar al usado en el análisis del algoritmo de Moore o en otros algoritmos \emph{greedy} de scheduling) permite concluir que, si existiera una solución que realizara un mayor número de proyectos negativos sin violar las restricciones, se podría reordenar dicha solución para que consumiera el presupuesto de manera idéntica al algoritmo.
+
+Por lo tanto, el procedimiento implementado en \texttt{Schedule} es óptimo para seleccionar y ordenar los proyectos negativos de modo que el rating nunca caiga por debajo de 0.
+
+Sea \(S=\{x_1,x_2,\dots,x_n\}\) un arreglo arbitrario de números (no necesariamente ordenado). Se desea demostrar que si existiese un algoritmo \(A\) que resuelve el problema de selección de proyectos en tiempo \(o(n\log n)\), entonces se podría ordenar \(S\) en tiempo \(o(n\log n)\). Dado que el problema de ordenamiento en el modelo de comparación tiene un límite inferior de \(\Omega(n\log n)\), se llegaría a una contradicción, lo que implica que \emph{no puede existir un algoritmo óptimo para el problema de selección de proyectos con complejidad menor a \(O(n\log n)\)}.
+\\
+
+\textbf{Complejidad}
+
+\begin{theorem}
+El algoritmo para seleccionar el máximo número de proyectos que Piad puede realizar tiene complejidad temporal \(O(n \log n)\) en el peor caso.
+\end{theorem}
+
+\begin{proof}
+Analicemos cada una de las fases del algoritmo:
+
+\begin{enumerate}
+    \item \textbf{Lectura y Clasificación:}  
+    Se recorren \(n\) proyectos, clasificándolos en dos listas. El costo es:
+    \[
+    O(n).
+    \]
+    
+    \item \textbf{Procesamiento de Proyectos Positivos (\texttt{MaxPos}):}  
+    \begin{itemize}
+        \item La ordenación de la lista \(\text{positive}\) tiene costo \(O(n_{\text{pos}} \log n_{\text{pos}})\), con \(n_{\text{pos}} \le n\).
+        \item La iteración sobre la lista ordenada es \(O(n_{\text{pos}})\).
+    \end{itemize}
+    Por lo tanto, el costo total en esta fase es:
+    \[
+    O(n \log n) + O(n) = O(n \log n).
+    \]
+    
+    \item \textbf{Modificación y Ordenación de Proyectos Negativos:}  
+    Se actualiza cada proyecto negativo en \(O(1)\) y se ordena la lista de tamaño \(n_{\text{neg}}\). Así, el costo es:
+    \[
+    O(n_{\text{neg}}) + O(n_{\text{neg}} \log n_{\text{neg}}) = O(n \log n).
+    \]
+    
+    \item \textbf{Planificación de Proyectos Negativos (\texttt{Schedule}):}  
+    Se itera la lista \(\text{negative}\) (de tamaño \(n_{\text{neg}}\)) en orden inverso. En cada iteración se realizan:
+    \begin{itemize}
+        \item Una inserción en la estructura multiconjunto: \(O(\log n)\).
+        \item Un ciclo \texttt{while} que, en el peor caso, realiza un número limitado de operaciones (cada una de \(O(\log n)\)) y, de forma amortizada, cada elemento se procesa una única vez.
+    \end{itemize}
+    Por lo tanto, el costo total en esta fase es:
+    \[
+    O(n_{\text{neg}} \log n) = O(n \log n).
+    \]
+\end{enumerate}
+
+Finalmente, sumando los costos de todas las fases se tiene:
+\[
+O(n) + O(n \log n) + O(n \log n) + O(n \log n) = O(n \log n).
+\]
+Por lo tanto, la complejidad temporal total del algoritmo es \(O(n \log n)\) en el peor caso.
+\end{proof}
+
+\subsection{Demostración de que \(O(n\log n)\) es la mejor cota}
+
+Sea \(S=\{x_1,x_2,\dots,x_n\}\) un arreglo arbitrario de números (no necesariamente ordenado). Se desea demostrar que si existiese un algoritmo \(A\) que resuelve el problema de selección de proyectos en tiempo menor a \(o(n\log n)\), entonces se podría ordenar \(S\) en tiempo menor a \(o(n\log n)\). Dado que el problema de ordenamiento en el modelo de comparación tiene un límite inferior de \(\Omega(n\log n)\), se llegaría a una contradicción, lo que implica que \emph{no puede existir un algoritmo óptimo para el problema de selección de proyectos con complejidad menor a \(O(n\log n)\)}.
+\\
+
+\subsubsection{Construcción de la Reducción}
+Dado \(S=\{x_1,x_2,\dots,x_n\}\), procedemos de la siguiente manera:
+
+\begin{enumerate}
+    \item Se define el rating inicial \(r\) como el mínimo elemento del arreglo:
+    \[
+    r = \min\{x_1,x_2,\dots,x_n\}.
+    \]
+    \item Para cada \(x_i \in S\) se crea una tarea (proyecto) \(P_i\) con:
+    \[
+    a_i = x_i.
+    \]
+    \item Se define la ganancia \(b_i\) de cada tarea de modo que, al completar las tareas en orden estrictamente creciente, el rating se incremente de forma exacta para alcanzar el siguiente umbral. Es decir, sea \(x_{(1)} \le x_{(2)} \le \cdots \le x_{(n)}\) la secuencia de elementos de \(S\) en orden creciente (la reducción se diseña de modo que \emph{la única solución óptima} para el problema de selección de proyectos es realizar las tareas en este orden). Se define:
+    \[
+    b_{(1)} = 0,\quad\text{y para } i\ge2,\quad b_{(i)} = x_{(i)} - x_{(i-1)}.
+    \]
+    De esta forma, si se realizan las tareas en el orden \(P_{(1)}, P_{(2)}, \dots, P_{(n)}\), el rating evoluciona de la siguiente manera:
+    \[
+    r_1 = r,\quad r_2 = r_1 + b_{(2)} = x_{(1)} + \bigl(x_{(2)}-x_{(1)}\bigr)=x_{(2)},\quad \dots,\quad r_n = x_{(n)}.
+    \]
+\end{enumerate}
+
+\subsubsection{Argumento de Correctitud y Contradicción}
+
+Note que, con esta construcción:
+\begin{itemize}
+    \item La única forma de que la secuencia de tareas sea factible (es decir, que para cada tarea se cumpla que el rating antes de la tarea es al menos \(a_i\)) es realizar las tareas en orden no decreciente de \(a_i\), es decir, en orden creciente de los \(x_i\).
+    \item Por lo tanto, la solución óptima para el problema de selección de proyectos corresponde a la secuencia \(\{P_{(1)},P_{(2)},\dots,P_{(n)}\}\), la cual ordena implícitamente el arreglo \(S\).
+\end{itemize}
+
+Ahora, supongamos que existe un algoritmo \(A\) que resuelve el problema de selección de proyectos en tiempo menor a \(o(n\log n)\). Aplicando \(A\) a la instancia construida obtenemos en tiempo menor a \(o(n\log n)\) la secuencia óptima de tareas, es decir, el arreglo \(S\) ordenado en forma creciente.
+
+Sin embargo, es conocido que cualquier algoritmo de ordenamiento basado en comparaciones tiene un límite inferior de \(\Omega(n\log n)\) en el peor caso. Por lo tanto, obtener una solución de ordenamiento en tiempo menor a \(o(n\log n)\) es imposible. Se llega así a una contradicción.
+
+Q.E.D
+
+\section{Button Lock}
+
+\subsection{Ejercicio}
+\label{sec:ejercicio}
+\noindent
+\textbf{Enunciado:} \\[1mm]
+Estás parado frente a una habitación con grandes tesoros. Lo único que te detiene es una puerta con una cerradura de combinación de botones. Esta cerradura tiene \(d\) botones con dígitos del \(0\) a \(d-1\). Cuando presionas un botón, este permanece presionado. No puedes desactivar un solo botón, pero existe un botón \textbf{RESET} que, al presionarlo, desactiva todos los botones. Inicialmente, ningún botón está presionado.\\[2mm]
+La puerta se abre instantáneamente cuando se presiona un conjunto específico de dígitos. Sin embargo, no conoces la contraseña; se sabe, por la documentación, que existen \(n\) posibles contraseñas. Se requiere encontrar la secuencia más corta de pulsaciones de botones (donde cada pulsación es un dígito o un RESET, indicado con la letra \texttt{R}) de modo que, durante su ejecución, aparezca al menos una vez cada una de las \(n\) contraseñas posibles.\\[2mm]
+\textbf{Entrada:}
+\begin{itemize}[noitemsep]
+    \item La primera línea contiene dos enteros \(d\) y \(n\) (\(1\le d\le 10\); \(1\le n\le 2^d-1\)).
+    \item Las siguientes \(n\) líneas contienen cada una una cadena de \(d\) ceros y unos, en donde el \(j\)-ésimo carácter es \(1\) si y solo si el botón \(j-1\) debe estar presionado.
+\end{itemize}
+\textbf{Salida:} \\[1mm]
+En la primera línea se debe imprimir el número mínimo \(k\) de pulsaciones; en la segunda, la secuencia de operaciones (los dígitos y las letras \texttt{R} para RESET).
+
+\medskip
+\noindent
+\href{https://codeforces.com/problemset/problem/1510/B}{Link del problema en Codeforces}
+
+\subsection{Etiquetas}
+\begin{itemize}[noitemsep]
+    \item Flujo de costo mínimo
+    \item Matching Bipartito
+    \item Programación Dinámica
+    \item Bitmask
+\end{itemize}
+
+\subsection{Solución}
+El algoritmo se basa en la siguiente observación:
+
+\bigskip
+
+\textbf{Operaciones de la cerradura:}
+\begin{itemize}
+    \item \textbf{Pulsar un botón:} pasa el estado actual \(X\) a \(X\cup\{i\}\). En un segmento sin RESET, se acumulan botones, y los estados que aparecen son los \emph{prefijos} de la secuencia de pulsaciones.
+    \item \textbf{RESET:} reinicia el estado a \(\emptyset\).
+\end{itemize}
+
+\bigskip
+
+Una \emph{contraseña} \(S\) es un subconjunto de los \(d\) botones (representado mediante su bitmask) y tiene \(|S|\) pulsaciones asociadas. Si cada contraseña se cubriera en un segmento separado, el costo total sería
+\[
+C_{\text{sep}} = \sum_{i=1}^{n} |S_i| + (n-1),
+\]
+donde \((n-1)\) corresponde a los RESET necesarios entre segmentos (no se requiere RESET antes del primer segmento).
+
+Cuando se unen varias contraseñas en un mismo segmento (lo que es posible siempre que se verifique \(S_i \subset S_j\) para contraseñas que aparezcan en la misma cadena) se puede \emph{ahorrar} pulsaciones y RESET. En efecto, si en un segmento se tienen \(S_i\) y \(S_j\) con \(S_i \subset S_j\), se cubren ambas pulsaciones con solamente \(|S_j|\) pulsaciones en vez de \( |S_i| + |S_j| + 1\) (considerando además el RESET entre segmentos). El ahorro al unir \(S_i\) con \(S_j\) es:
+\[
+\Delta(i,j)= |S_i|+1.
+\]
+Sea \(B\) el beneficio total al unir contraseñas en cadenas. Entonces, el costo de la solución se puede expresar como:
+\[
+C = \Biggl(\sum_{i=1}^{n} |S_i| + (n-1)\Biggr) - B.
+\]
+Minimizar \(C\) equivale a maximizar \(B\).
+
+\bigskip
+
+\subsubsection{Reducción a Flujo de Costo Mínimo}
+Para lograr maximizar el beneficio \(B\), se construye un grafo bipartito \(G=(U\cup V, E)\) de la siguiente forma:
+\begin{itemize}
+    \item Cada contraseña \(S_i\) se replica en ambos conjuntos: \(i\in U\) y \(i\in V\).
+    \item Se añade una arista de \(i\) (en \(U\)) a \(j\) (en \(V\)) si y solo si \(S_i\subset S_j\) (asegurando, además, que \(|S_i| < |S_j|\)).
+    \item A cada arista \((i,j)\) se le asigna \textbf{capacidad} \(1\) y \textbf{costo} 
+    \[
+    c(i,j) = -\bigl(|S_i|+1\bigr).
+    \]
+    De esta forma, enviar flujo a través de la arista representa unir \(S_i\) y \(S_j\) en la misma cadena, obteniéndose un beneficio de \(|S_i|+1\).
+\end{itemize}
+Además se introduce:
+\begin{itemize}
+    \item Una \emph{fuente} conectada a todos los nodos de \(U\) (capacidad \(1\), costo \(0\)).
+    \item Un \emph{sumidero} al que se conectan todos los nodos de \(V\) (capacidad \(1\), costo \(0\)).
+\end{itemize}
+
+Con esta construcción, un flujo unitario a través de la arista \((i,j)\) indica que las contraseñas \(S_i\) y \(S_j\) se unirán en una misma cadena. Sea \(M\) el matching (conjunto de aristas usadas) y defínase el beneficio total obtenido como:
+\[
+B(M)= \sum_{(i,j)\in M} \Bigl(|S_i|+1\Bigr).
+\]
+Luego, el costo de la solución es:
+\[
+C = \Biggl(\sum_{i=1}^{n}|S_i|+(n-1)\Biggr) - B(M).
+\]
+El algoritmo de flujo de costo mínimo se encarga de encontrar el matching \(M^*\) que maximiza \(B(M)\) (al minimizar el costo total del flujo), lo cual implica que la secuencia de operaciones reconstruida a partir de \(M^*\) es óptima.
+
+\medskip
+
+\subsection{Demostración de Correctitud}
+
+Rafael Bk, [2/9/2025 10:25 PM]
+
+\begin{theorem}
+Sea \(T = \{S_1,S_2,\dots,S_n\}\) el conjunto de contraseñas (cada una representada mediante su bitmask) y sea
+\[
+C_{\text{sep}}=\sum_{i=1}^{n}|S_i|+(n-1)
+\]
+el costo de cubrir cada contraseña en un segmento independiente. Entonces, la secuencia de operaciones generada mediante la reducción a flujo de costo mínimo, que produce un matching \(M\) con beneficio
+\[
+B(M)=\sum_{(i,j)\in M} (|S_i|+1),
+\]
+tiene costo
+\[
+C = C_{\text{sep}} - B(M),
+\]
+el cual es mínimo. En consecuencia, la secuencia construida es óptima.
+\end{theorem}
+
+\begin{proof}
+Observemos lo siguiente:
+\begin{itemize}
+    \item Si cada contraseña se cubriera en un segmento separado, el costo total sería \(C_{\text{sep}}\).
+    \item Si se unen dos contraseñas \(S_i\) y \(S_j\) (con \(S_i\subset S_j\)) en un mismo segmento, la cobertura de ambas se realiza al alcanzar \(S_j\) (con costo \(|S_j|\) en vez de \(|S_i|+|S_j|+1\)), obteniéndose un ahorro de
+    \[
+    \Delta(i,j)=|S_i|+1.
+    \]
+\end{itemize}
+
+Si una cadena \(C\) contiene \(k\) contraseñas, el ahorro total es
+\[
+B_C=\sum_{t=1}^{k-1} \Bigl(|S_{i_t}|+1\Bigr).
+\]
+Dividiendo \(T\) en \(m\) cadenas, el costo total de la solución es:
+\[
+C = \sum_{C \text{ cadena}} |S_{\max}(C)| + (m-1).
+\]
+Notamos que este costo se puede reescribir como:
+\[
+C = C_{\text{sep}} - B,
+\]
+donde \(B\) es el ahorro total acumulado al unir contraseñas en cadenas.
+
+En el grafo bipartito construido, cada arista \((i,j)\) tiene costo \( -(|S_i|+1)\). Así, si se envía un flujo unitario a través de dicha arista, se aporta un "beneficio" de \(|S_i|+1\). Sea \(B(M)\) la suma de estos beneficios para el matching \(M\) obtenido. Entonces, el costo total del flujo es:
+\[
+C_M = -B(M).
+\]
+El algoritmo de flujo de costo mínimo encuentra el matching \(M^*\) que maximiza \(B(M)\) (o, equivalentemente, minimiza \(C_M\)). Así, la solución final tiene costo:
+\[
+C = \Biggl(\sum_{i=1}^{n}|S_i|+(n-1)\Biggr) - B(M^*),
+\]
+el cual es mínimo.
+
+La reconstrucción de la secuencia se efectúa de la siguiente manera:
+\begin{enumerate}
+    \item Cada arista \((i,j)\) en el matching \(M^*\) indica que \(S_i\) y \(S_j\) serán cubiertas en la misma cadena.
+    \item Los nodos sin arista entrante constituyen el inicio de una cadena.
+    \item Para cada cadena, partiendo del estado \(\emptyset\), se presionan los botones necesarios hasta alcanzar el estado final de la cadena. De este modo, los estados intermedios (que corresponden a las contraseñas de la cadena) aparecerán en algún punto de la secuencia.
+    \item Se inserta la operación RESET (\texttt{R}) entre cadenas para reiniciar el estado.
+\end{enumerate}
+De ello se concluye que la secuencia de operaciones generada es de costo mínimo y, por tanto, óptima.
+\end{proof}
+
+\medskip
+
+\subsection{Complejidad Temporal}
+
+\begin{theorem}
+El algoritmo propuesto para resolver el problema de la cerradura de combinación, que utiliza una reducción a flujo de costo mínimo en un grafo bipartito, tiene una complejidad temporal en el peor caso de 
+\[
+O(n^4),
+\]
+donde \(n\) es el número de contraseñas posibles.
+\end{theorem}
+
+\begin{proof}
+Analizaremos la complejidad del algoritmo dividiéndolo en tres fases principales:
+
+\medskip
+
+\textbf{1. Construcción del grafo:}
+
+\begin{itemize}
+    \item Se tiene un conjunto \(U\) con \(n\) nodos y un conjunto \(V\) con \(n\) nodos, a los que se suman dos nodos adicionales: la fuente \(s\) y el sumidero \(t\). Por lo tanto, el número total de vértices es:
+    \[
+    |V(G)| = 2n+2 = O(n).
+    \]
+    \item Respecto a las aristas:
+    \begin{itemize}
+        \item Se agregan \(n\) aristas desde la fuente \(s\) a cada nodo de \(U\).
+        \item Para cada par de contraseñas \(S_i\) y \(S_j\) (con \(i<j\)), se verifica la condición \(S_i\subset S_j\). En el peor caso, se consideran hasta \(O(n^2)\) pares. La verificación de inclusión tiene coste \(O(d)\), y dado que \(d\) es constante (\(d\le 10\)), se tiene un coste \(O(1)\) por verificación.
+        \item Se agregan \(n\) aristas desde cada nodo de \(V\) al sumidero \(t\).
+    \end{itemize}
+    Por lo tanto, el número total de aristas es:
+    \[
+    |E(G)| = O(n) + O(n^2) + O(n) = O(n^2).
+    \]
+\end{itemize}
+
+\medskip
+
+\textbf{2. Ejecución del algoritmo de flujo de costo mínimo:}
+
+El algoritmo de flujo de costo mínimo se implementa utilizando una variante que, en cada iteración, encuentra un camino aumentante de coste mínimo a través del método de Bellman--Ford.
+
+\begin{itemize}
+    \item La complejidad de cada ejecución de Bellman--Ford es \(O(|V|\cdot|E|)\). Dado que \(|V|=O(n)\) y \(|E|=O(n^2)\), cada iteración tiene coste:
+    \[
+    O(n\cdot n^2) = O(n^3).
+    \]
+    \item El flujo total a enviar es, a lo sumo, \(n\) (ya que se envía una unidad de flujo por cada contraseña). Por lo tanto, en el peor caso se realizan \(O(n)\) iteraciones.
+\end{itemize}
+
+La complejidad total de la fase de flujo es, por lo tanto:
+\[
+O(n) \times O(n^3) = O(n^4).
+\]
+
+\medskip
+
+\textbf{3. Reconstrucción de la solución:}
+
+Una vez obtenido el matching óptimo a partir del flujo, se reconstruyen las cadenas y se genera la secuencia de pulsaciones. Esta fase consiste en recorrer los nodos y reconstruir las cadenas; en el peor caso se procesan \(O(n)\) nodos con un coste \(O(1)\) por cada uno, lo que implica una complejidad de \(O(n)\).
+
+\medskip
+
+\textbf{Análisis global:}
+
+Sumando las complejidades de cada fase obtenemos:
+\[
+O(n^2) \ (\text{construcción del grafo}) \quad + \quad O(n^4) \ (\text{flujo de costo mínimo}) \quad + \quad O(n) \ (\text{reconstrucción})
+\]
+La complejidad dominante es \(O(n^4)\).
+
+\medskip
+
+Por lo tanto, la complejidad temporal global del algoritmo es \(O(n^4)\) en el peor caso.
+\end{proof}
+
+
+
+\bibliography{citation}
+
+\end{document}
