@@ -1,1 +1,0 @@
-{"name":"Local: greedy","url":"/home/rafa01/Documents/DAA/PROYECTO/A/greedy.cpp","tests":[{"id":1739137790898,"input":"10 3\n5 8 6 10 2 7 4 1 9 3\n","output":""}],"interactive":false,"memoryLimit":1024,"timeLimit":3000,"srcPath":"/home/rafa01/Documents/DAA/PROYECTO/A/greedy.cpp","group":"local","local":true}
