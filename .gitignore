@@ -1,0 +1,38 @@
+# Compiled Object files
+*.o
+*.obj
+*.ko
+*.so
+*.dylib
+*.class
+
+# Compiled Executable files
+*.exe
+*.out
+*.app
+
+# Dependency directories
+node_modules/
+venv/
+env/
+packages/
+
+# Editor-specific files
+.vscode/
+.idea/
+.DS_Store
+
+# OS generated files
+Thumbs.db
+
+# Log files
+*.log
+
+# Build output directories
+build/
+dist/
+bin/
+
+# Personal files
+*.swp
+*.tmp
